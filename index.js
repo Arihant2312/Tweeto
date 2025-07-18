@@ -145,6 +145,35 @@ app.get("/login",(req, res) => {
         let post = await postmodel.findOneAndUpdate({ _id: req.params.id},{content:req.body.content});
         res.redirect("/profile")
     })
+    // ...existing code...
+
+app.post("/delete/:id", isLoggedIn, async (req, res) => {
+    try {
+        // Find and delete the post
+        const post = await postmodel.findOneAndDelete({ _id: req.params.id, user: req.user.userid });
+        if (!post) {
+            return res.status(404).send("Post not found or you do not have permission to delete this post.");
+        }
+
+        // Remove the post reference from the user's posts array
+        await usermodel.updateOne(
+            { _id: req.user.userid },
+            { $pull: { posts: req.params.id } }
+        );
+
+        res.redirect("/profile");
+    } catch (error) {
+        console.error("Error deleting post:", error);
+        res.status(500).send("An error occurred while deleting the post.");
+    }
+});
+
+// ...existing code...
+// all posts of users
+app.get("/all-posts", async (req, res) => {
+    const posts = await postmodel.find({}).populate("user");
+    res.render("all-posts", { posts });
+});
 
     
     
